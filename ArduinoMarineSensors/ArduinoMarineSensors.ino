@@ -110,7 +110,7 @@ Serial.println("Check encode status");
 //Serial.print("Interval check: ");
 //Serial.println(SENSOR_CONDUCTIVETY_INTERVAL_MIN);
     Canbus.SendMessage(&marineSensorData);
- /*   Serial.println("Message sent");
+    Serial.println("Message sent");
     Serial.println(getPHValue(phResponseCode));
     Serial.println(getConductivety(conductivetyResponseCode));
     Serial.println(getTemperature(temperatureResponseCode));
@@ -124,7 +124,7 @@ Serial.println("Check encode status");
     Serial.println(conductivety);
     Serial.println(messageHandler.getMappedData(&temp, SENSOR_TEMPERATURE_DATASIZE, SENSOR_TEMPERATURE_INTERVAL_MIN, SENSOR_TEMPERATURE_INTERVAL_MAX));
     Serial.println(temp);
-*/
+
 }
 
 void checkCanbusFor (int timeMs){
@@ -146,6 +146,7 @@ float getPHValue(uint8_t& responseStatusCode) {
                                                  PH_PROBABLE_INTERVAL_MIN, PH_PROBABLE_INTERVAL_MAX);
 
     sendCommandToSensor(SENSOR_PH,SENSOR_COMMAND_SLEEP);
+    value = 12.3456789;
     
     return value;
 }
@@ -155,6 +156,7 @@ float getConductivety(uint8_t& responseStatusCode) {
     float value = readSensorWithProbableInterval(SENSOR_CONDUCTIVETY, responseStatusCode,
                                                  CONDUCTIVETY_PROBABLE_INTERVAL_MIN, CONDUCTIVETY_PROBABLE_INTERVAL_MAX);
     sendCommandToSensor(SENSOR_CONDUCTIVETY,SENSOR_COMMAND_SLEEP);
+    value = 86591.789;
 
     return value;
 }
@@ -165,6 +167,7 @@ float getTemperature(uint8_t& responseStatusCode) {
                                                  TEMPERATURE_PROBABLE_INTERVAL_MIN, TEMPERATURE_PROBABLE_INTERVAL_MAX);
                                      
     sendCommandToSensor(SENSOR_TEMPERATURE,SENSOR_COMMAND_SLEEP);
+    value = 45.6789;
 
     return value;
 }
