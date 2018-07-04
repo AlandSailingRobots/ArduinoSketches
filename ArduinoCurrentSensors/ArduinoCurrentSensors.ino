@@ -59,6 +59,7 @@ void setup()
     }
 
     Serial.println("SETUP COMPLETE");
+
 }
 
 void loop()
@@ -85,7 +86,7 @@ void sendCurrentSensorData (){
     //CanMessageHandler messageHandlerPU(MSG_ID_CURRENT_SENSOR_DATA_POWER_UNIT);
     //CanMessageHandler messageHandlerB(MSG_ID_CURRENT_SENSOR_DATA_BOX);
 
-    // Create new encodeMessage func? -> trying encodeCSMessage / aborted for now
+
     Serial.println("########################################");
     Serial.print("Sensor enconding: id = ");
     Serial.print(sensor_id);
@@ -99,15 +100,42 @@ void sendCurrentSensorData (){
     uint16_t vol_data = getVoltageValue();
     uint start = 2;
     uint length = 2;
-    
+
+    //cur_data = 65535;
+    //vol_data = 65535;
     //Serial.println("Encoding current: ");
-    Serial.println(messageHandler.encodeMessage( cur_data, 2, 2)); // default values in bytes
-    //Serial.println(messageHandler.getMessageInBitset().to_string<char, std::string::traits_type, std::string::allocator_type>().c_str());
-    Serial.println(messageHandler.encodeMessage( vol_data, 0, 2));
-    Serial.println(messageHandler.encodeMessage( sensor_id, 7*8 + 5, 3, false)); // false --> values in bits
-    Serial.println(messageHandler.encodeMessage( rolling_number, 7*8 + 3, 2, false));
+    messageHandler.encodeMessage( cur_data, 2, 2); // default values in bytes
+    //std::bitset<32> cpy_bitset(static_cast<std::string>(messageHandler.getMessageInBitset().to_string<char, std::string::traits_type, std::string::allocator_type>().c_str()+31));
+    //Serial.println(messageHandler.getMessageInBitset().to_string<char, std::string::traits_type, std::string::allocator_type>().c_str()+31);
+    //unsigned long cpy = (unsigned long)(cpy_bitset.to_ulong());
+    messageHandler.encodeMessage( vol_data, 0, 2);
+    messageHandler.encodeMessage( sensor_id, 7*8 + 5, 3, false); // false --> values in bits
+    messageHandler.encodeMessage( rolling_number, 7*8 + 3, 2, false);
+    Serial.println("After encoding data: ");
+    Serial.println(messageHandler.getMessageInBitset().to_string<char, std::string::traits_type, std::string::allocator_type>().c_str());
+    //Serial.println("Old copy           : ");
+    //Serial.println(cpy);
+    
     Serial.println("Bitset To CanMsg call");
     Serial.println(messageHandler.bitsetToCanMsg());
+
+    
+    uint8_t message[8] = {0,0,0,0,0,0,0,0};
+    Serial.print("message.data after bitsetToCanMsg(): ");
+    for(int i=0;i<8;i++) {
+      message[i] = messageHandler.getMessage().data[i];
+      Serial.print(message[i]);
+      Serial.print(" | ");
+    }
+    Serial.println(" ");
+    /*Serial.println("getMsgInBitset: "); // value before changing with canMsgToBitset function
+    Serial.println(messageHandler.getMessageInBitset().to_string<char, std::string::traits_type, std::string::allocator_type>().c_str());
+    Serial.print("canMsgToBitset: ");
+    Serial.println(messageHandler.canMsgToBitset());
+    Serial.println(messageHandler.getMessageInBitset().to_string<char, std::string::traits_type, std::string::allocator_type>().c_str());*/
+
+    
+    
 
     /*uint8_t a_byte = 0;
     uint8_t *p_byte = &a_byte;
@@ -138,7 +166,10 @@ void sendCurrentSensorData (){
     // compiler is lost there, that's why we have to specify everything in the template
     String arduino_wants_this_one = (String)str_msg.c_str();
     Serial.println(arduino_wants_this_one);*/
-    
+
+
+    // TO DO: FIX THIS PART AS ITS NOT CODING EVEN NUMBER FOR SOME REASON
+    // FIRST FIX : get rid of the mask, problem should be there then...
     sensor_id = (sensor_id+1)%8;           // Uses 3 bits.
     rolling_number = (rolling_number+1)%4; // Uses 2 bits.
     //error_flag = 0;

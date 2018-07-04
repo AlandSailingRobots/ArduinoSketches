@@ -5,6 +5,8 @@
  *
  */
 
+#include <ArduinoSTL.h>
+
 #include <Wire.h>
 #include <SoftwareSerial.h>
 
