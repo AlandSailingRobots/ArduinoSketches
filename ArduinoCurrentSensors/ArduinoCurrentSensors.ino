@@ -1,7 +1,7 @@
 #include <ArduinoSTL.h>
 
 /*Purpose: Main Arduino file for current sensor data
- *         Gets requests and reads sensors and sends data on canbus
+ *         Reads sensors and sends data on canbus
  *         Uses CAN-bus to receive and send data.
  *
  *
@@ -17,12 +17,18 @@
 #include <string>
 
 // Fill in with current sensors addresses
-#define PIN_CUR_SENSOR_1 A0 //solar panel current
-#define PIN_VOL_SENSOR_1 A2 //solar panel voltage
-#define PIN_VOL_SENSOR_2 A3 //battery voltage
-#define PIN_CUR_SENSOR_2 A1 //battery current 
+// Add a case for the new sensor in getCurValue() and getVolValue()
+#define NUMBER_OF_SENSORS 2
 
+#define PIN_CUR_SENSOR_0 A0 //solar panel current
+#define PIN_VOL_SENSOR_0 A2 //solar panel voltage
+#define PIN_VOL_SENSOR_1 A3 //battery voltage
+#define PIN_CUR_SENSOR_1 A1 //battery current 
+
+// Don't forget changing this depending on the arduino board
+// Mega -> 53, Nano or Uno -> 10
 #define CHIP_SELECT_PIN 10
+
 
 // Do we want response status?
 const int RESPONSE_STATUS_NOT_CONNECTED = 0;
@@ -74,11 +80,12 @@ void handleSensorReadingTimer() {
 
     if(sensorReadingIntervalInSeconds != -1 && lastReadingTimeInSeconds + sensorReadingIntervalInSeconds < timeNowInSeconds) {
         lastReadingTimeInSeconds = timeNowInSeconds;
-        sendCurrentSensorData();
+        sendCurrentSensorData(sensor_id);
+        sensor_id = (sensor_id+1)%NUMBER_OF_SENSORS;
     }
 }
 
-void sendCurrentSensorData (){
+void sendCurrentSensorData (unsigned int sensor_id){
     // Modify this block before flashing the arduino depending
     // on how many current sensors are plugged in
 
@@ -92,29 +99,19 @@ void sendCurrentSensorData (){
     Serial.print(sensor_id);
     Serial.print(", rol_num = ");
     Serial.println(rolling_number);
-    //Serial.print(messageHandler.encodeMessage(CURRENT_SENSOR_CURRENT_DATASIZE, getCurrentValue()));
-    //Serial.println(messageHandler.encodeMessage(CURRENT_SENSOR_VOLTAGE_DATASIZE, getVoltageValue()));
 
     // Encode left byte, header for current sensors
     uint16_t cur_data = getCurrentValue();
     uint16_t vol_data = getVoltageValue();
-    uint start = 2;
-    uint length = 2;
 
-    //cur_data = 65535;
-    //vol_data = 65535;
-    //Serial.println("Encoding current: ");
-    messageHandler.encodeMessage( cur_data, 2, 2); // default values in bytes
-    //std::bitset<32> cpy_bitset(static_cast<std::string>(messageHandler.getMessageInBitset().to_string<char, std::string::traits_type, std::string::allocator_type>().c_str()+31));
-    //Serial.println(messageHandler.getMessageInBitset().to_string<char, std::string::traits_type, std::string::allocator_type>().c_str()+31);
-    //unsigned long cpy = (unsigned long)(cpy_bitset.to_ulong());
-    messageHandler.encodeMessage( vol_data, 0, 2);
-    messageHandler.encodeMessage( sensor_id, 7*8 + 5, 3, false); // false --> values in bits
-    messageHandler.encodeMessage( rolling_number, 7*8 + 3, 2, false);
+    //Serial.println("Encoding... ");
+    messageHandler.encodeMessage( cur_data,       CURRENT_SENSOR_CURRENT_START, CURRENT_SENSOR_CURRENT_DATASIZE, CURRENT_SENSOR_CURRENT_IN_BYTE);
+    messageHandler.encodeMessage( vol_data,       CURRENT_SENSOR_VOLTAGE_START, CURRENT_SENSOR_VOLTAGE_DATASIZE, CURRENT_SENSOR_VOLTAGE_IN_BYTE);
+    messageHandler.encodeMessage( sensor_id,           CURRENT_SENSOR_ID_START,      CURRENT_SENSOR_ID_DATASIZE,      CURRENT_SENSOR_ID_IN_BYTE);
+    messageHandler.encodeMessage( rolling_number, CURRENT_SENSOR_ROL_NUM_START, CURRENT_SENSOR_ROL_NUM_DATASIZE, CURRENT_SENSOR_ROL_NUM_IN_BYTE);
     Serial.println("After encoding data: ");
     Serial.println(messageHandler.getMessageInBitset().to_string<char, std::string::traits_type, std::string::allocator_type>().c_str());
-    //Serial.println("Old copy           : ");
-    //Serial.println(cpy);
+
     
     Serial.println("Bitset To CanMsg call");
     Serial.println(messageHandler.bitsetToCanMsg());
@@ -170,8 +167,8 @@ void sendCurrentSensorData (){
 
     // TO DO: FIX THIS PART AS ITS NOT CODING EVEN NUMBER FOR SOME REASON
     // FIRST FIX : get rid of the mask, problem should be there then...
-    sensor_id = (sensor_id+1)%8;           // Uses 3 bits.
-    rolling_number = (rolling_number+1)%4; // Uses 2 bits.
+    //sensor_id = (sensor_id+1)%NUMBER_OF_SENSORS;    // Uses 3 bits.
+    rolling_number = (rolling_number+1)%4;          // Uses 2 bits.
     //error_flag = 0;
 
     
@@ -209,42 +206,45 @@ void checkCanbusFor (int timeMs){
     }
 }
 
-uint16_t getCurrentValue() { //need to add uint8_t sensor variable, to change the pin we read
+uint16_t getCurrentValue(unsigned int sensorID) { 
 
-// Put the analog read and everything here
-    float value = analogRead(PIN_CUR_SENSOR_1)*0.0186; 
-    Serial.print("solar panel current: ");
+    int pinToReadCur;
+    switch (sensorID) {
+      case 0:
+          pinToReadCur = PIN_CUR_SENSOR_0;
+          break;
+      case 1:
+          pinToReadCur = PIN_CUR_SENSOR_1;
+          break;
+      default:
+          break;
+      }
+    float value = analogRead(pinToReadCur)*0.0186; 
+    Serial.print("Current reading: ");
     Serial.println(value);
     uint16_t output = fltCompressor.compress(value);
     
     return output;
 }
 
-uint16_t getVoltageValue() { //need to add uint8_t sensor variable, to change the pin we read
+uint16_t getVoltageValue(unsigned int sensorID) { 
 
-// Put the analog read and everything here
-    float value = analogRead(PIN_VOL_SENSOR_1)*0.0258;
-    Serial.print("solar panel voltage: ");
+    int pinToReadVol;
+    switch (sensorID) {
+      case 0:
+          pinToReadVol = PIN_VOL_SENSOR_0;
+          break;
+      case 1:
+          pinToReadVol = PIN_VOL_SENSOR_1;
+          break;
+      default:
+          break;
+      }
+    float value = analogRead(pinToReadVol)*0.0258;
+    Serial.print("Voltage reading: ");
     Serial.println(value);
     uint16_t output = fltCompressor.compress(value);
     
     return output;
 }
 
-uint16_t getCurrentValuePU() { //need to add uint8_t sensor variable, to change the pin we read
-
-// Put the analog read and everything here
-    float value = analogRead(PIN_CUR_SENSOR_2)*0.0186;
-    uint16_t output = fltCompressor.compress(value);
-    
-    return output;
-}
-
-uint16_t getVoltageValuePU() { //need to add uint8_t sensor variable, to change the pin we read
-
-// Put the analog read and everything here
-    float value = analogRead(PIN_VOL_SENSOR_2)*0.0258;
-    uint16_t output = fltCompressor.compress(value);
-    
-    return output;
-}
