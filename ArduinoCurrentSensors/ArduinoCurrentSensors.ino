@@ -86,25 +86,21 @@ void handleSensorReadingTimer() {
 }
 
 void sendCurrentSensorData (unsigned int sensor_id){
-    // Modify this block before flashing the arduino depending
-    // on how many current sensors are plugged in
 
+    // Init Canbus message
     CanMessageHandler messageHandler(MSG_ID_CURRENT_SENSOR_DATA);
-    //CanMessageHandler messageHandlerPU(MSG_ID_CURRENT_SENSOR_DATA_POWER_UNIT);
-    //CanMessageHandler messageHandlerB(MSG_ID_CURRENT_SENSOR_DATA_BOX);
 
-
+    // Encode current sensor message
     Serial.println("########################################");
-    Serial.print("Sensor enconding: id = ");
+    Serial.print("Sensor encoding: id = ");
     Serial.print(sensor_id);
     Serial.print(", rol_num = ");
     Serial.println(rolling_number);
 
-    // Encode left byte, header for current sensors
-    uint16_t cur_data = getCurrentValue();
-    uint16_t vol_data = getVoltageValue();
+    uint16_t cur_data = getCurrentValue(sensor_id);
+    uint16_t vol_data = getVoltageValue(sensor_id);
 
-    //Serial.println("Encoding... ");
+    Serial.println("Encoding... ");
     messageHandler.encodeMessage( cur_data,       CURRENT_SENSOR_CURRENT_START, CURRENT_SENSOR_CURRENT_DATASIZE, CURRENT_SENSOR_CURRENT_IN_BYTE);
     messageHandler.encodeMessage( vol_data,       CURRENT_SENSOR_VOLTAGE_START, CURRENT_SENSOR_VOLTAGE_DATASIZE, CURRENT_SENSOR_VOLTAGE_IN_BYTE);
     messageHandler.encodeMessage( sensor_id,           CURRENT_SENSOR_ID_START,      CURRENT_SENSOR_ID_DATASIZE,      CURRENT_SENSOR_ID_IN_BYTE);
@@ -125,44 +121,6 @@ void sendCurrentSensorData (unsigned int sensor_id){
       Serial.print(" | ");
     }
     Serial.println(" ");
-    /*Serial.println("getMsgInBitset: "); // value before changing with canMsgToBitset function
-    Serial.println(messageHandler.getMessageInBitset().to_string<char, std::string::traits_type, std::string::allocator_type>().c_str());
-    Serial.print("canMsgToBitset: ");
-    Serial.println(messageHandler.canMsgToBitset());
-    Serial.println(messageHandler.getMessageInBitset().to_string<char, std::string::traits_type, std::string::allocator_type>().c_str());*/
-
-    
-    
-
-    /*uint8_t a_byte = 0;
-    uint8_t *p_byte = &a_byte;
-    uint32_t arduino_max_int = 0;
-    uint32_t *p_max = &arduino_max_int;
-    std::bitset<64> a_bitset(4294967295);
-    Serial.println(a_bitset.to_string<char, std::string::traits_type, std::string::allocator_type>().c_str()+32);
-    std::bitset<32> another_bitset(static_cast<std::string>(a_bitset.to_string<char, std::string::traits_type, std::string::allocator_type>().c_str()+32));
-    Serial.println(another_bitset.to_string<char, std::string::traits_type, std::string::allocator_type>().c_str());
-    //another_bitset = static_cast<std::bitset<32>>(a_bitset);
-    *p_max = another_bitset.to_ulong();
-    Serial.print("*p_max value: ");
-    Serial.println(*p_max);
-    Serial.print("Going to uint8_t a_byte: ");
-    a_byte = static_cast<uint8_t>(*p_max);
-    Serial.println(*p_byte);*/
-    
-    
-    //std::bitset<64> test(4294967295);
-    //Serial.println("Test value: ");
-    //Serial.println(test.to_string<char, std::string::traits_type, std::string::allocator_type>().c_str());
-    //int numberof1 = test.count();
-    //Serial.println(numberof1);
-
-    /*Serial.print("Bitset encoded: ");
-    std::bitset<64> bitset_message = messageHandler.getMessageInBitset();
-    std::string str_msg = bitset_message.to_string<char, std::string::traits_type, std::string::allocator_type>(); 
-    // compiler is lost there, that's why we have to specify everything in the template
-    String arduino_wants_this_one = (String)str_msg.c_str();
-    Serial.println(arduino_wants_this_one);*/
 
 
     // TO DO: FIX THIS PART AS ITS NOT CODING EVEN NUMBER FOR SOME REASON
@@ -171,27 +129,11 @@ void sendCurrentSensorData (unsigned int sensor_id){
     rolling_number = (rolling_number+1)%4;          // Uses 2 bits.
     //error_flag = 0;
 
-    
-
-
-
-    //Serial.print("Second sensor enconding: ");
-    //Serial.print(messageHandlerPU.encodeMessage(CURRENT_SENSOR_CURRENT_DATASIZE, getCurrentValuePU()));
-    //Serial.println(messageHandlerPU.encodeMessage(CURRENT_SENSOR_VOLTAGE_DATASIZE, getVoltageValuePU()));
-
-    //Serial.print("Third sensor enconding: ")
-    //Serial.print(messageHandlerB.encodeMessage(CURRENT_SENSOR_CURRENT_DATASIZE, getCurrentValue()));
-    //Serial.println(messageHandlerB.encodeMessage(CURRENT_SENSOR_VOLTAGE_DATASIZE, getVoltageValue()));
 
     // Send messages over Canbus
     CanMsg currentSensorData = messageHandler.getMessage();
     Canbus.SendMessage(&currentSensorData);
 
-    //CanMsg currentSensorDataPU = messageHandlerPU.getMessage();
-    //Canbus.SendMessage(&currentSensorDataPU);
-
-    //CanMsg currentSensorDataB = messageHandlerB.getMessage();
-    //Canbus.SendMessage(&currentSensorDataB);
 }
 
 void checkCanbusFor (int timeMs){
