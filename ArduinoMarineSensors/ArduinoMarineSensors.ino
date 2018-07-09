@@ -97,38 +97,6 @@ void sendMarineSensorData (){
 
     Serial.println("#####################################################");
     uint8_t phResponseCode, conductivetyResponseCode, temperatureResponseCode;
-/*    //Serial.println("mapinterval result: ");
-    uint32_t mapvalph = static_cast<uint32_t>(CanUtility::mapInterval( getPHValue(phResponseCode), 
-                                              SENSOR_PH_INTERVAL_MIN, SENSOR_PH_INTERVAL_MAX, 0, pow(2,SENSOR_PH_DATASIZE*8)-1));
-    uint32_t mapvalco = static_cast<uint32_t>(CanUtility::mapInterval( getConductivety(conductivetyResponseCode), 
-                                              SENSOR_CONDUCTIVETY_INTERVAL_MIN, SENSOR_CONDUCTIVETY_INTERVAL_MAX, 0, pow(2,SENSOR_CONDUCTIVETY_DATASIZE*8)-1));
-    //float no_cast_cond = CanUtility::mapInterval( getConductivety(conductivetyResponseCode), 
-    //                                          SENSOR_CONDUCTIVETY_INTERVAL_MIN, SENSOR_CONDUCTIVETY_INTERVAL_MAX, 0, pow(2,SENSOR_CONDUCTIVETY_DATASIZE*8)-1);
-    //float hard_coded =  3.4028235E+37;//4294770689;//4294967295;
-                     // 4294770688
-    uint32_t mapvalte = static_cast<uint32_t>(CanUtility::mapInterval( getTemperature(temperatureResponseCode), 
-                                              SENSOR_TEMPERATURE_INTERVAL_MIN, SENSOR_TEMPERATURE_INTERVAL_MAX, 0, pow(2,SENSOR_TEMPERATURE_DATASIZE*8)-1));
-    //float no_cast_temp = CanUtility::mapInterval( getTemperature(temperatureResponseCode), 
-    //                                            SENSOR_TEMPERATURE_INTERVAL_MIN, SENSOR_TEMPERATURE_INTERVAL_MAX, 0, pow(2,SENSOR_TEMPERATURE_DATASIZE*8)-1);
-    
-
-
-    messageHandler.encodeMessage(mapvalph, SENSOR_PH_START, SENSOR_PH_DATASIZE, SENSOR_PH_IN_BYTE);
-    Serial.println(messageHandler.getMessageInBitset().to_string<char, std::string::traits_type, std::string::allocator_type>().c_str());
-    messageHandler.encodeMessage(mapvalco, SENSOR_CONDUCTIVETY_START, SENSOR_CONDUCTIVETY_DATASIZE, SENSOR_CONDUCTIVETY_IN_BYTE);
-    Serial.println(messageHandler.getMessageInBitset().to_string<char, std::string::traits_type, std::string::allocator_type>().c_str());
-    messageHandler.encodeMessage(mapvalte, SENSOR_TEMPERATURE_START, SENSOR_TEMPERATURE_DATASIZE, SENSOR_TEMPERATURE_IN_BYTE);
-    Serial.println(messageHandler.getMessageInBitset().to_string<char, std::string::traits_type, std::string::allocator_type>().c_str());
-    
-    
-    //messageHandler.encodeMappedMessage(ph_val, SENSOR_PH_START, SENSOR_PH_DATASIZE, SENSOR_PH_IN_BYTE, SENSOR_PH_INTERVAL_MIN, SENSOR_PH_INTERVAL_MAX);
-    //Serial.println(messageHandler.getMessageInBitset().to_string<char, std::string::traits_type, std::string::allocator_type>().c_str());
-    //messageHandler.encodeMappedMessage(getConductivety(conductivetyResponseCode), SENSOR_CONDUCTIVETY_START, SENSOR_CONDUCTIVETY_DATASIZE, SENSOR_CONDUCTIVETY_IN_BYTE, SENSOR_CONDUCTIVETY_INTERVAL_MIN, SENSOR_CONDUCTIVETY_INTERVAL_MAX);
-    //Serial.println(messageHandler.getMessageInBitset().to_string<char, std::string::traits_type, std::string::allocator_type>().c_str());
-    //messageHandler.encodeMappedMessage(getTemperature(temperatureResponseCode), SENSOR_TEMPERATURE_START, SENSOR_TEMPERATURE_DATASIZE, SENSOR_TEMPERATURE_IN_BYTE, SENSOR_TEMPERATURE_INTERVAL_MIN, SENSOR_TEMPERATURE_INTERVAL_MAX);
-    //Serial.println(messageHandler.getMessageInBitset().to_string<char, std::string::traits_type, std::string::allocator_type>().c_str());
-*/
-
     
     
     // ALTERNATIVE VERSION, DIRECTLY ENCODING FLOAT32 AND FLOAT16 INSTEAD OF MAPPING
@@ -144,22 +112,19 @@ void sendMarineSensorData (){
     Serial.println(conductivety, 4);
     Serial.print("Temperature  : ");
     Serial.println(temperature, 4);
-    /*uint32_t mapvalph = static_cast<uint32_t>(CanUtility::mapInterval( getPHValue(phResponseCode),SENSOR_PH_INTERVAL_MIN, SENSOR_PH_INTERVAL_MAX, 0, pow(2,SENSOR_PH_DATASIZE*8)-1));
-    Serial.println(mapvalph);
-    messageHandler.encodeMessage(mapvalph, SENSOR_PH_START, SENSOR_PH_DATASIZE, SENSOR_PH_IN_BYTE);*/
+
     messageHandler.encodeMappedMessage(ph, SENSOR_PH_START, SENSOR_PH_DATASIZE, SENSOR_PH_IN_BYTE, SENSOR_PH_INTERVAL_MIN, SENSOR_PH_INTERVAL_MAX);
-    //Serial.println(messageHandler.getMessageInBitset().to_string<char, std::string::traits_type, std::string::allocator_type>().c_str());
-    
+  
     messageHandler.encodeMappedMessage(conductivety, SENSOR_CONDUCTIVETY_START, SENSOR_CONDUCTIVETY_DATASIZE, SENSOR_CONDUCTIVETY_IN_BYTE, SENSOR_CONDUCTIVETY_INTERVAL_MIN, SENSOR_CONDUCTIVETY_INTERVAL_MAX);
-    //messageHandler.encodeMessage(getConductivety(conductivetyResponseCode), SENSOR_CONDUCTIVETY_START, SENSOR_CONDUCTIVETY_DATASIZE, SENSOR_CONDUCTIVETY_IN_BYTE);   
-    //Serial.println(messageHandler.getMessageInBitset().to_string<char, std::string::traits_type, std::string::allocator_type>().c_str());
-    
+   
     // Half precision float converter, IEEE754 standard
     Float16Compressor fltCompressor;
     uint16_t cmp_temperature = fltCompressor.compress(temperature);
     messageHandler.encodeMessage(cmp_temperature, SENSOR_TEMPERATURE_START, SENSOR_TEMPERATURE_DATASIZE, SENSOR_TEMPERATURE_IN_BYTE);
-    Serial.println(messageHandler.getMessageInBitset().to_string<char, std::string::traits_type, std::string::allocator_type>().c_str());
+
+    messageHandler.setErrorMessage(getErrorCode(phResponseCode, conductivetyResponseCode, temperatureResponseCode));
     
+    Serial.println(messageHandler.getMessageInBitset().to_string<char, std::string::traits_type, std::string::allocator_type>().c_str());
 
     messageHandler.bitsetToCanMsg(); // Don't forget this to update the CanMsg.data that will actually be sent
 
@@ -180,28 +145,12 @@ void sendMarineSensorData (){
     */
 
 
-//Serial.print("ERROR CODE: ");
-//Serial.println(messageHandler.getErrorMessage());
+Serial.print("ERROR CODE: ");
+Serial.println(messageHandler.getErrorMessage());
     CanMsg marineSensorData = messageHandler.getMessage();
 //Serial.print("Interval check: ");
 //Serial.println(SENSOR_CONDUCTIVETY_INTERVAL_MIN);
     Canbus.SendMessage(&marineSensorData);
-/*
-    Serial.println("Message sent");
-    Serial.println(getPHValue(phResponseCode));
-    Serial.println(getConductivety(conductivetyResponseCode));
-    Serial.println(getTemperature(temperatureResponseCode));
-    //Serial.println("After encode");
-    //PrintMsg(marineSensorData);
-    Serial.println("With getMappedData");
-    float ph, conductivety, temp;
-    Serial.println(messageHandler.getMappedData(&ph, SENSOR_PH_DATASIZE, SENSOR_PH_INTERVAL_MIN, SENSOR_PH_INTERVAL_MAX));
-    Serial.println(ph);
-    Serial.println(messageHandler.getMappedData(&conductivety, SENSOR_CONDUCTIVETY_DATASIZE, SENSOR_CONDUCTIVETY_INTERVAL_MIN, SENSOR_CONDUCTIVETY_INTERVAL_MAX));
-    Serial.println(conductivety);
-    Serial.println(messageHandler.getMappedData(&temp, SENSOR_TEMPERATURE_DATASIZE, SENSOR_TEMPERATURE_INTERVAL_MIN, SENSOR_TEMPERATURE_INTERVAL_MAX));
-    Serial.println(temp);
-    */
 
 }
 
@@ -224,8 +173,6 @@ float getPHValue(uint8_t& responseStatusCode) {
                                                  PH_PROBABLE_INTERVAL_MIN, PH_PROBABLE_INTERVAL_MAX);
 
     sendCommandToSensor(SENSOR_PH,SENSOR_COMMAND_SLEEP);
-    //value = 6.865789;
-    //value = 255;
     
     return value;
 }
@@ -235,8 +182,6 @@ float getConductivety(uint8_t& responseStatusCode) {
     float value = readSensorWithProbableInterval(SENSOR_CONDUCTIVETY, responseStatusCode,
                                                  CONDUCTIVETY_PROBABLE_INTERVAL_MIN, CONDUCTIVETY_PROBABLE_INTERVAL_MAX);
     sendCommandToSensor(SENSOR_CONDUCTIVETY,SENSOR_COMMAND_SLEEP);
-    //value = 831.354918457;
-    //value = 4294967295;
  
     return value;
 }
@@ -247,8 +192,6 @@ float getTemperature(uint8_t& responseStatusCode) {
                                                  TEMPERATURE_PROBABLE_INTERVAL_MIN, TEMPERATURE_PROBABLE_INTERVAL_MAX);
                                      
     sendCommandToSensor(SENSOR_TEMPERATURE,SENSOR_COMMAND_SLEEP);
-    //value = 38.6789;
-    //value = 65535;
 
     return value;
 }
