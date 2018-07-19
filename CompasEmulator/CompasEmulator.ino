@@ -1,36 +1,64 @@
-// Wire Slave Receiver
-// by Nicholas Zambetti <http://www.zambetti.com>
-
-// Demonstrates use of the Wire library
-// Receives data as an I2C/TWI slave device
-// Refer to the "Wire Master Writer" example for use with this
-
-// Created 29 March 2006
-
-// This example code is in the public domain.
-
 
 #include <Wire.h>
 
+int latestReceice2 = -1;
+int latestReceive1 = -1;
+uint8_t compasData[6] = {0, 0, 0, 0, 0, 0};
+int hedingReqNr = 0;
+
+
 void setup() {
-  Wire.begin(0x19);                // join i2c bus with address #8
-  Wire.onReceive(receiveEvent); // register event
+  Wire.begin(0x19);                // join i2c bus with address #0x19
+  Wire.onRequest(reqEvent);     // register event
+  Wire.onReceive(receiveEvent);
   Serial.begin(9600);           // start serial for output
   Serial.println("I2C SLAVE");
 }
 
+
 void loop() {
-  delay(100);
+  for (int heading = 0; heading < 3600; heading +=10){
+    setHeading(heading);
+    delay(1000);
+  }
+  
+
+}
+  
+
+
+
+void receiveEvent(int howMany) {
+  while (0 < Wire.available()) { 
+ 
+    latestReceice2 = latestReceive1;
+    latestReceive1= Wire.read();
+
+  }
+
 }
 
-// function that executes whenever data is received from master
-// this function is registered as an event, see setup()
-void receiveEvent(int howMany) {
-  while (0 < Wire.available()) { // loop through all but the last
-    int c = Wire.read();// receive byte as a int
-    Serial.print ("Recived byte: ");
-    Serial.println(c);         // print the int
+void reqEvent(){
+  if (latestReceive1 == 0 and latestReceice2 == 0xE1){ //for init
+    Wire.write(0x32);
   }
-  //int x = Wire.read();    // receive byte as an integer
-  //Serial.println(x);         // print the integer
+  else if(latestReceive1 == 0x50){ //for post heading
+
+     
+     Wire.write(compasData[hedingReqNr]);
+     hedingReqNr ++;
+     hedingReqNr = hedingReqNr%6;
+      
+
+  }
 }
+
+void setHeading(int16_t heading){
+  compasData[0] = (heading & 0xff00) >> 8;
+  compasData[1] = heading & 0xff;
+  
+}
+
+
+
+
