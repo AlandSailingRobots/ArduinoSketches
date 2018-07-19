@@ -92,6 +92,12 @@ void sendFeedback (){
 
   messageHandler.encodeMappedMessage(RUDDER_ANGLE_DATASIZE, getRudderFeedback(),MIN_RUDDER_ANGLE,MAX_RUDDER_ANGLE);
   messageHandler.encodeMappedMessage(WINGSAIL_ANGLE_DATASIZE, getWingsailFeedback(), MIN_WINGSAIL_ANGLE, MAX_WINGSAIL_ANGLE);
+  
+// New version
+//  messageHandler.encodeMappedMessage(getRudderFeedback(), RUDDER_ANGLE_START, RUDDER_ANGLE_DATASIZE, RUDDER_ANGLE_IN_BYTE, MIN_RUDDER_ANGLE, MAX_RUDDER_ANGLE);
+//  messageHandler.encodeMappedMessage(getWingsailFeedback(), WINGSAIL_ANGLE_START, WINGSAIL_ANGLE_DATASIZE, WINGSAIL_ANGLE_IN_BYTE, MIN_WINGSAIL_ANGLE, MAX_WINGSAIL_ANGLE);
+//  messageHandler.bitsetToCanMsg();
+
 
   CanMsg feedbackMsg = messageHandler.getMessage();
 
@@ -101,6 +107,11 @@ void sendFeedback (){
 void sendArduinoData (){
   CanMessageHandler messageHandler(MSG_ID_RC_STATUS);
   messageHandler.encodeMessage(RADIOCONTROLLER_ON_DATASIZE, isRadioControllerUsed());
+
+  //New version
+  //messageHandler.encodeMessage(isRadioControllerUsed(), RADIOCONTROLLER_ON_START, RADIOCONTROLLER_ON_DATASIZE, RADIOCONTROLLER_ON_IN_BYTE);
+  //messageHandler.bitsetToCanMsg();
+
 
   CanMsg arduinoData = messageHandler.getMessage();
   Canbus.SendMessage(&arduinoData);
@@ -123,7 +134,7 @@ void checkCanbusFor (int timeMs){
 float getRudderFeedback() {
   int feedback = analogRead(RUDDER_FEEDBACK_PIN);
 
-//Variabales c, b1 and b2 come from formula to map to a squareroot function. Reference in Hardware documatation
+//Variables c, b1 and b2 come from formula to map to a squareroot function. Reference in Hardware documentation
   float c = -361.0000;
   float b1 =  1.8823;
   float b2 = -1.8473;
@@ -141,7 +152,7 @@ float getRudderFeedback() {
 float getWingsailFeedback() {
   int feedback = analogRead(WINGSAIL_FEEDBACK_PIN);
 
-  //Variabales c, b1 and b2 come from formula to map to a squareroot function. Reference in Hardware documatation
+  //Variables c, b1 and b2 come from formula to map to a squareroot function. Reference in Hardware documentation
   float c = -450;
   float b1 = 0.7098;
   float b2 = -0.6455;
@@ -173,11 +184,16 @@ void processCANMessage (CanMsg& msg){
   if(messageHandler.getMessageId() == MSG_ID_AU_CONTROL) {
     double rudderAngle;
     messageHandler.getMappedData(&rudderAngle, RUDDER_ANGLE_DATASIZE, MIN_RUDDER_ANGLE, MAX_RUDDER_ANGLE);
+    // New version
+    //messageHandler.canMsgToBitset();
+    //messageHandler.getMappedData(&rudderAngle, RUDDER_ANGLE_START, RUDDER_ANGLE_DATASIZE, RUDDER_ANGLE_IN_BYTE, MIN_RUDDER_ANGLE, MAX_RUDDER_ANGLE);
     Serial.println(rudderAngle);
 
     double wingsailAngle;
     
     Serial.println(messageHandler.getMappedData(&wingsailAngle, WINGSAIL_ANGLE_DATASIZE, MIN_WINGSAIL_ANGLE, MAX_WINGSAIL_ANGLE));
+    // New version
+    //messageHandler.getMappedData(&wingsailAngle, WINGSAIL_ANGLE_START, WINGSAIL_ANGLE_DATASIZE, WINGSAIL_ANGLE_IN_BYTE, MIN_WINGSAIL_ANGLE, MAX_WINGSAIL_ANGLE);
     Serial.println(wingsailAngle);
     moveRudder(-rudderAngle);
 

@@ -57,7 +57,7 @@ const int CONDUCTIVETY_PROBABLE_INTERVAL_MAX = 17000;
 const int TEMPERATURE_PROBABLE_INTERVAL_MIN = -2;
 const int TEMPERATURE_PROBABLE_INTERVAL_MAX = 35;
 
-const int SENSOR_READING_TRIES = 1;//5
+const int SENSOR_READING_TRIES = 5;
 
 CanbusClass Canbus;
 unsigned long lastReadingTimeInSeconds = 0;
