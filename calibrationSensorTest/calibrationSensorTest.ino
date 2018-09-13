@@ -38,7 +38,7 @@
 
 #define ERROR_SENSOR_TEMPERATURE_SYNTAX 7           // Syntax error. Happens if we send wrong command to sensor
 #define ERROR_SENSOR_TEMPERATURE_NOT_READY 8        // Not ready. Means we did not wait long enough for sensor to actually get a reading
-#define ERROR_SENSOR_TEMPERATURE_NO_DATA 9 // No data from sensor. Probably sensor failure? Check specifications from sensor documentation
+#define ERROR_SENSOR_TEMPERATURE_NO_DATA 9          // No data from sensor. Probably sensor failure? Check specifications from sensor documentation
 
 #define PH 0
 #define CON 1
@@ -140,12 +140,12 @@ void loop()
                stringComplete = false;
            }
            else if (inputString=="SWITCH_SENSOR_READING\n") {
-               switch_sensor_reading = (switch_sensor_reading+1)%2; //switch beteen 0 (PH) and 1 (CON) 
+               switch_sensor_reading = (switch_sensor_reading+1)%2; //switch between 0 (PH) and 1 (CON) 
                inputString = "";
                stringComplete = false;
            }
            else if (inputString=="") {
-               delay(10); //have to catch this or otherwise the serial is flooded by wrong command
+               delay(10); //have to catch this or otherwise the serial is flooded with wrong command
                stringComplete = false;
            }
            else if (inputString=="READPH\n") {

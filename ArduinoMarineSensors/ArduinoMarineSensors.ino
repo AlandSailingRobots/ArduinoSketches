@@ -5,6 +5,8 @@
  *
  */
 
+#include <ArduinoSTL.h>
+
 #include <Wire.h>
 #include <SoftwareSerial.h>
 
@@ -93,38 +95,63 @@ void sendMarineSensorData (){
 
     CanMessageHandler messageHandler(MSG_ID_MARINE_SENSOR_DATA);
 
+    Serial.println("#####################################################");
     uint8_t phResponseCode, conductivetyResponseCode, temperatureResponseCode;
-Serial.println("Check encode status");
-    Serial.println(messageHandler.encodeMappedMessage(SENSOR_PH_DATASIZE, getPHValue(phResponseCode),
-                                       SENSOR_PH_INTERVAL_MIN, SENSOR_PH_INTERVAL_MAX));
+    
+    
+    // ALTERNATIVE VERSION, DIRECTLY ENCODING FLOAT32 AND FLOAT16 INSTEAD OF MAPPING
+    float ph, conductivety, temperature;
+    ph = getPHValue(phResponseCode);
+    conductivety = getConductivety(conductivetyResponseCode);
+    temperature = getTemperature(temperatureResponseCode);
 
-    Serial.println(messageHandler.encodeMappedMessage(SENSOR_CONDUCTIVETY_DATASIZE, getConductivety(conductivetyResponseCode),
-                                       SENSOR_CONDUCTIVETY_INTERVAL_MIN, SENSOR_CONDUCTIVETY_INTERVAL_MAX));
+    Serial.println("Reading values: ");
+    Serial.print("pH           : ");
+    Serial.println(ph, 4);
+    Serial.print("Conductivity : ");
+    Serial.println(conductivety, 4);
+    Serial.print("Temperature  : ");
+    Serial.println(temperature, 4);
 
-    Serial.println(messageHandler.encodeMappedMessage(SENSOR_TEMPERATURE_DATASIZE, getTemperature(temperatureResponseCode) ,
-                                       SENSOR_TEMPERATURE_INTERVAL_MIN, SENSOR_TEMPERATURE_INTERVAL_MAX));
+    messageHandler.encodeMappedMessage(ph, SENSOR_PH_START, SENSOR_PH_DATASIZE, SENSOR_PH_IN_BYTE, SENSOR_PH_INTERVAL_MIN, SENSOR_PH_INTERVAL_MAX);
+  
+    messageHandler.encodeMappedMessage(conductivety, SENSOR_CONDUCTIVETY_START, SENSOR_CONDUCTIVETY_DATASIZE, SENSOR_CONDUCTIVETY_IN_BYTE, SENSOR_CONDUCTIVETY_INTERVAL_MIN, SENSOR_CONDUCTIVETY_INTERVAL_MAX);
+   
+    // Half precision float converter, IEEE754 standard
+    Float16Compressor fltCompressor;
+    uint16_t cmp_temperature = fltCompressor.compress(temperature);
+    messageHandler.encodeMessage(cmp_temperature, SENSOR_TEMPERATURE_START, SENSOR_TEMPERATURE_DATASIZE, SENSOR_TEMPERATURE_IN_BYTE);
+
     messageHandler.setErrorMessage(getErrorCode(phResponseCode, conductivetyResponseCode, temperatureResponseCode));
-//Serial.print("ERROR CODE: ");
-//Serial.println(messageHandler.getErrorMessage());
+    
+    Serial.println(messageHandler.getMessageInBitset().to_string<char, std::string::traits_type, std::string::allocator_type>().c_str());
+
+    messageHandler.bitsetToCanMsg(); // Don't forget this to update the CanMsg.data that will actually be sent
+
+    uint8_t message[8] = {0,0,0,0,0,0,0,0};
+    Serial.print("message.data after bitsetToCanMsg(): ");
+    for(int i=0;i<8;i++) {
+      message[i] = messageHandler.getMessage().data[i];
+      Serial.print(message[i]);
+      Serial.print(" | ");
+    }
+    Serial.println(" ");
+
+    /* OLD VERSION, SHOULD STILL WORK AT THE MOMENT
+     *  messageHandler.encodeMappedMessage(SENSOR_PH_DATASIZE, getPHValue(phResponseCode), SENSOR_PH_INTERVAL_MIN, SENSOR_PH_INTERVAL_MAX));
+     *  messageHandler.encodeMappedMessage(SENSOR_CONDUCTIVETY_DATASIZE, getConductivety(conductivetyResponseCode), SENSOR_CONDUCTIVETY_INTERVAL_MIN, SENSOR_CONDUCTIVETY_INTERVAL_MAX));
+     *  messageHandler.encodeMappedMessage(SENSOR_TEMPERATURE_DATASIZE, getTemperature(temperatureResponseCode), SENSOR_TEMPERATURE_INTERVAL_MIN, SENSOR_TEMPERATURE_INTERVAL_MAX));
+     *  messageHandler.setErrorMessage(getErrorCode(phResponseCode, conductivetyResponseCode, temperatureResponseCode));
+    */
+
+
+Serial.print("ERROR CODE: ");
+Serial.println(messageHandler.getErrorMessage());
     CanMsg marineSensorData = messageHandler.getMessage();
 //Serial.print("Interval check: ");
 //Serial.println(SENSOR_CONDUCTIVETY_INTERVAL_MIN);
     Canbus.SendMessage(&marineSensorData);
- /*   Serial.println("Message sent");
-    Serial.println(getPHValue(phResponseCode));
-    Serial.println(getConductivety(conductivetyResponseCode));
-    Serial.println(getTemperature(temperatureResponseCode));
-    //Serial.println("After encode");
-    //PrintMsg(marineSensorData);
-    Serial.println("With getMappedData");
-    float ph, conductivety, temp;
-    Serial.println(messageHandler.getMappedData(&ph, SENSOR_PH_DATASIZE, SENSOR_PH_INTERVAL_MIN, SENSOR_PH_INTERVAL_MAX));
-    Serial.println(ph);
-    Serial.println(messageHandler.getMappedData(&conductivety, SENSOR_CONDUCTIVETY_DATASIZE, SENSOR_CONDUCTIVETY_INTERVAL_MIN, SENSOR_CONDUCTIVETY_INTERVAL_MAX));
-    Serial.println(conductivety);
-    Serial.println(messageHandler.getMappedData(&temp, SENSOR_TEMPERATURE_DATASIZE, SENSOR_TEMPERATURE_INTERVAL_MIN, SENSOR_TEMPERATURE_INTERVAL_MAX));
-    Serial.println(temp);
-*/
+
 }
 
 void checkCanbusFor (int timeMs){
@@ -155,7 +182,7 @@ float getConductivety(uint8_t& responseStatusCode) {
     float value = readSensorWithProbableInterval(SENSOR_CONDUCTIVETY, responseStatusCode,
                                                  CONDUCTIVETY_PROBABLE_INTERVAL_MIN, CONDUCTIVETY_PROBABLE_INTERVAL_MAX);
     sendCommandToSensor(SENSOR_CONDUCTIVETY,SENSOR_COMMAND_SLEEP);
-
+ 
     return value;
 }
 
